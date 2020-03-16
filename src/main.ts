@@ -19,7 +19,7 @@ async function run(): Promise<void> {
       : path.join(process.env.GITHUB_WORKSPACE || '', targetsFile)
     const fileContents = fs.readFileSync(targetsPath, 'utf8')
     const targetsContents = JSON.parse(fileContents)
-    await cloudWatchEvents.putEvents(targetsContents).promise()
+    await cloudWatchEvents.putTargets(targetsContents).promise()
   } catch (error) {
     core.setFailed(error.message)
   }
