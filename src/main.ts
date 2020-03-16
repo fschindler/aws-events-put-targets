@@ -1,16 +1,25 @@
 import * as core from '@actions/core'
-import {wait} from './wait'
+import path from 'path'
+import fs from 'fs'
+import aws from 'aws-sdk'
 
 async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    const cloudWatchEvents = new aws.CloudWatchEvents({
+      customUserAgent: 'aws-events-put-targets-for-github-actions'
+    })
 
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    // Get inputs
+    const targetsFile = core.getInput('targets', {required: true})
 
-    core.setOutput('time', new Date().toTimeString())
+    // Run the task
+    core.debug('Put the targets')
+    const targetsPath = path.isAbsolute(targetsFile)
+      ? targetsFile
+      : path.join(process.env.GITHUB_WORKSPACE || '', targetsFile)
+    const fileContents = fs.readFileSync(targetsPath, 'utf8')
+    const targetsContents = JSON.parse(fileContents)
+    await cloudWatchEvents.putEvents(targetsContents).promise()
   } catch (error) {
     core.setFailed(error.message)
   }
